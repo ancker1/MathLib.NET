@@ -1,4 +1,4 @@
-﻿namespace LinearRegression;
+﻿namespace FastRegression;
 
 public static class Line
 {
@@ -57,17 +57,17 @@ public static class Line
         mean_x /= x.Length;
         mean_y /= y.Length;
 
-        double covariance_xy = 0d, variance_x = 0d, variance_y = 0d;
+        double covariance_xy = 0d, variance_x = 0d, SST = 0d;
         for (int i = 0; i < x.Length; i++)
         {
             double diff_x = x[i] - mean_x;
             double diff_y = y[i] - mean_y;
             covariance_xy += diff_x * diff_y;
             variance_x += diff_x * diff_x;
-            variance_y += diff_y * diff_y;
+            SST += diff_y * diff_y;
         }
 
-        return covariance_xy / (variance_x * variance_y);
+        return covariance_xy / (variance_x * SST);
     }
 
     public static double Variance(double[] x)
@@ -127,5 +127,81 @@ public static class Line
 
         return covariance_xy / (x.Length - 1);
     }
+
+    public static double SlopeStandardError(double[] x, double[] y, double a, double b)
+    {
+        if (x.Length != y.Length)
+        {
+            throw new ArgumentException($"The two input vectors must have the same length. The input vector {nameof(x)} has a length of {x.Length}, the input vector {nameof(y)} has a length of {y.Length}.");
+        }
+
+        double mean_x = x.Sum();
+        mean_x /= x.Length;
+
+        double part_x = 0, SSE = 0;
+        for (int i = 0; i < x.Length; i++)
+        {
+            part_x += (x[i] - mean_x) * (x[i] - mean_x);
+            var yhat = (a * x[i] + b);
+            SSE += (y[i] - yhat) * (y[i] - yhat);
+        }
+
+        return Math.Sqrt(1d / (x.Length - 2d) * SSE / part_x);
+    }
+
+    /// <summary>
+    /// Assumes that the intercept is zero.
+    /// </summary>
+    /// <param name="x"></param>
+    /// <param name="y"></param>
+    /// <param name="a"></param>
+    /// <returns></returns>
+    /// <exception cref="ArgumentException"></exception>
+    public static double SlopeStandardError(double[] x, double[] y, double a)
+    {
+        if (x.Length != y.Length)
+        {
+            throw new ArgumentException($"The two input vectors must have the same length. The input vector {nameof(x)} has a length of {x.Length}, the input vector {nameof(y)} has a length of {y.Length}.");
+        }
+
+        double SSE = 0d, SSX = 0d;
+        for (int i = 0; i < x.Length; i++)
+        {
+            var yhat = (a * x[i]);
+            SSE += (y[i] - yhat) * (y[i] - yhat);
+            SSX += x[i] * x[i];
+        }
+
+        return Math.Sqrt(1d / (x.Length - 1) * SSE / SSX);
+    }
+
+    public static double InterceptStandardError(double[] x, double[] y, double a, double b)
+    {
+        if (x.Length != y.Length)
+        {
+            throw new ArgumentException($"The two input vectors must have the same length. The input vector {nameof(x)} has a length of {x.Length}, the input vector {nameof(y)} has a length of {y.Length}.");
+        }
+
+        double mx = 0d;
+        for (int i = 0; i < x.Length; i++)
+        {
+            mx += x[i];
+        }
+
+        mx /= x.Length;
+
+        double SSE = 0d, SSX = 0d, SSDiffX = 0d;
+        for (int i = 0; i < x.Length; i++)
+        {
+            var yhat = a * x[i] + b;
+            SSE += (y[i] - yhat) * (y[i] - yhat);
+            SSX += x[i] * x[i];
+            SSDiffX += (x[i] - mx) * (x[i] - mx);
+        }
+
+        return Math.Sqrt(1d / (x.Length * (x.Length - 2)) * SSE * SSX / SSDiffX);
+    }
+
+    // TODO: slope & intercept confidence intervals
 }
 
